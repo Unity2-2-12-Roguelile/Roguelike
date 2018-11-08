@@ -13,6 +13,7 @@ namespace Completed
 		public int pointsPerSoda = 20;				//Number of points to add to player food points when picking up a soda object.
 		public int wallDamage = 1;					//How much damage a player does to a wall when chopping it.
 		public Text foodText;						//UI Text to display current player food total.
+        public Text hpText;
 		public AudioClip moveSound1;				//1 of 2 Audio clips to play when player moves.
 		public AudioClip moveSound2;				//2 of 2 Audio clips to play when player moves.
 		public AudioClip eatSound1;					//1 of 2 Audio clips to play when player collects a food object.
@@ -23,6 +24,7 @@ namespace Completed
 		
 		private Animator animator;					//Used to store a reference to the Player's animator component.
 		private int food;                           //Used to store player food points total during level.
+        private int hp;
 #if UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
         private Vector2 touchOrigin = -Vector2.one;	//Used to store location of screen touch origin for mobile controls.
 #endif
@@ -36,9 +38,11 @@ namespace Completed
 			
 			//Get the current food point total stored in GameManager.instance between levels.
 			food = GameManager.instance.playerFoodPoints;
-			
-			//Set the foodText to reflect the current player food total.
-			foodText.text = "Food: " + food;
+            hp =  GameManager.instance.playerHitPoints;
+
+            //Set the foodText to reflect the current player food total.
+            foodText.text = "Food: " + food;
+            hpText.text = "HP: " + hp;
 			
 			//Call the Start function of the MovingObject base class.
 			base.Start ();
@@ -50,10 +54,12 @@ namespace Completed
 		{
 			//When Player object is disabled, store the current local food total in the GameManager so it can be re-loaded in next level.
 			GameManager.instance.playerFoodPoints = food;
-		}
-		
-		
-		private void Update ()
+            GameManager.instance.playerHitPoints = hp;
+
+        }
+
+
+        private void Update ()
 		{
 			//If it's not the player's turn, exit the function.
 			if(!GameManager.instance.playersTurn) return;
@@ -75,7 +81,16 @@ namespace Completed
 			{
 				vertical = 0;
 			}
-			//Check if we are running on iOS, Android, Windows Phone 8 or Unity iPhone
+            if(horizontal< 0)
+            {
+                transform.localScale = new Vector3(-1,1,1);
+            }
+            if (horizontal > 0)
+            {
+                transform.localScale = new Vector3(1, 1, 1);
+
+            }
+            //Check if we are running on iOS, Android, Windows Phone 8 or Unity iPhone
 #elif UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
 			
 			//Check if Input has registered more than zero touches
@@ -117,8 +132,8 @@ namespace Completed
 			}
 			
 #endif //End of mobile platform dependendent compilation section started above with #elif
-			//Check if we have a non-zero value for horizontal or vertical
-			if(horizontal != 0 || vertical != 0)
+            //Check if we have a non-zero value for horizontal or vertical
+            if (horizontal != 0 || vertical != 0)
 			{
 				//Call AttemptMove passing in the generic parameter Wall, since that is what Player may interact with if they encounter one (by attacking it)
 				//Pass in horizontal and vertical as parameters to specify the direction to move Player in.
@@ -130,11 +145,16 @@ namespace Completed
 		//AttemptMove takes a generic parameter T which for Player will be of the type Wall, it also takes integers for x and y direction to move in.
 		protected override void AttemptMove <T> (int xDir, int yDir)
 		{
-			//Every time player moves, subtract from food points total.
-			food--;
+            //Every time player moves, subtract from food points total.
+            if (food > 0)
+            { food--;
+             foodText.text = "Food: " + food;}
+            else
+            { hp--;
+                hpText.text = "HP: " + hp;}
 			
 			//Update food text display to reflect current score.
-			foodText.text = "Food: " + food;
+			
 			
 			//Call the AttemptMove method of the base class, passing in the component T (in this case Wall) and x and y direction to move.
 			base.AttemptMove <T> (xDir, yDir);
@@ -148,12 +168,12 @@ namespace Completed
 				//Call RandomizeSfx of SoundManager to play the move sound, passing in two audio clips to choose from.
 				SoundManager.instance.RandomizeSfx (moveSound1, moveSound2);
 			}
-			
-			//Since the player has moved and lost food points, check if the game has ended.
-			CheckIfGameOver ();
-			
-			//Set the playersTurn boolean of GameManager to false now that players turn is over.
-			GameManager.instance.playersTurn = false;
+
+            //Since the player has moved and lost food points, check if the game has ended.
+            CheckIfGameOver();
+
+            //Set the playersTurn boolean of GameManager to false now that players turn is over.
+            GameManager.instance.playersTurn = false;
 		}
 		
 		
@@ -236,10 +256,10 @@ namespace Completed
 			animator.SetTrigger ("playerHit");
 			
 			//Subtract lost food points from the players total.
-			food -= loss;
+			hp -= loss;
 			
 			//Update the food display with the new total.
-			foodText.text = "-"+ loss + " Food: " + food;
+			hpText.text = "-"+ loss + " HP: " + hp;
 			
 			//Check to see if game has ended.
 			CheckIfGameOver ();
@@ -250,7 +270,7 @@ namespace Completed
 		private void CheckIfGameOver ()
 		{
 			//Check if food point total is less than or equal to zero.
-			if (food <= 0) 
+			if (hp <= 0) 
 			{
 				//Call the PlaySingle function of SoundManager and pass it the gameOverSound as the audio clip to play.
 				SoundManager.instance.PlaySingle (gameOverSound);
