@@ -25,6 +25,10 @@ namespace Completed
 		private Animator animator;					//Used to store a reference to the Player's animator component.
 		private int food;                           //Used to store player food points total during level.
         private int hp;
+
+        public bool enemy;
+        [SerializeField]
+        GameObject enemyObject;
 #if UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
         private Vector2 touchOrigin = -Vector2.one;	//Used to store location of screen touch origin for mobile controls.
 #endif
@@ -43,7 +47,8 @@ namespace Completed
             //Set the foodText to reflect the current player food total.
             foodText.text = "Food: " + food;
             hpText.text = "HP: " + hp;
-			
+
+            enemy = false;
 			//Call the Start function of the MovingObject base class.
 			base.Start ();
 		}
@@ -61,12 +66,14 @@ namespace Completed
 
         private void Update ()
 		{
-			//If it's not the player's turn, exit the function.
-			if(!GameManager.instance.playersTurn) return;
+
+            //If it's not the player's turn, exit the function.
+            if (!GameManager.instance.playersTurn) return;
+           
 			
 			int horizontal = 0;  	//Used to store the horizontal move direction.
 			int vertical = 0;		//Used to store the vertical move direction.
-			
+
 			//Check if we are running either in the Unity editor or in a standalone build.
 #if UNITY_STANDALONE || UNITY_WEBPLAYER
 			
@@ -90,6 +97,13 @@ namespace Completed
                 transform.localScale = new Vector3(1, 1, 1);
 
             }
+            ////攻撃する
+            //if (Input.GetKeyDown(KeyCode.Space))
+            //{
+            //    //敵のHPを減らす。
+            //    animator.SetTrigger("playerChop");
+            //    Destroy(enemyObject);
+            //}
             //Check if we are running on iOS, Android, Windows Phone 8 or Unity iPhone
 #elif UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
 			
@@ -190,13 +204,13 @@ namespace Completed
 			//Set the attack trigger of the player's animation controller in order to play the player's attack animation.
 			animator.SetTrigger ("playerChop");
 		}
-		
-		
-		//OnTriggerEnter2D is sent when another object enters a trigger collider attached to this object (2D physics only).
-		private void OnTriggerEnter2D (Collider2D other)
+
+
+        //OnTriggerEnter2D is sent when another object enters a trigger collider attached to this object (2D physics only).
+        private void OnTriggerEnter2D (Collider2D other)
 		{
-			//Check if the tag of the trigger collided with is Exit.
-			if(other.tag == "Exit")
+            //Check if the tag of the trigger collided with is Exit.
+            if (other.tag == "Exit")
 			{
 				//Invoke the Restart function to start the next level with a delay of restartLevelDelay (default 1 second).
 				Invoke ("Restart", restartLevelDelay);
@@ -236,11 +250,29 @@ namespace Completed
 				//Disable the soda object the player collided with.
 				other.gameObject.SetActive (false);
 			}
+            if(other.tag=="Enemy")
+            {
+                //攻撃する
+                if (Input.GetKey(KeyCode.Space))
+                {
+                    //敵のHPを減らす。
+                    animator.SetTrigger("playerChop");
+                    enemy = true;
+                    other.gameObject.SetActive(false);
+                }
+            }
 		}
-		
-		
-		//Restart reloads the scene when called.
-		private void Restart ()
+        private void OnTriggerExit2D(Collider2D collision)
+        {
+            if(collision.gameObject.tag=="Enemy")
+            {
+                collision.gameObject.SetActive(true);
+                enemy = false;
+            }
+        }
+
+        //Restart reloads the scene when called.
+        private void Restart ()
 		{
 			//Load the last scene loaded, in this case Main, the only scene in the game. And we load it in "Single" mode so it replace the existing one
             //and not load all the scene object in the current scene.
@@ -252,6 +284,10 @@ namespace Completed
 		//It takes a parameter loss which specifies how many points to lose.
 		public void LoseFood (int loss)
 		{
+            if(enemy)
+            {
+                return;
+            }
 			//Set the trigger for the player animator to transition to the playerHit animation.
 			animator.SetTrigger ("playerHit");
 			
@@ -260,14 +296,13 @@ namespace Completed
 			
 			//Update the food display with the new total.
 			hpText.text = "-"+ loss + " HP: " + hp;
-			
-			//Check to see if game has ended.
-			CheckIfGameOver ();
-		}
-		
-		
-		//CheckIfGameOver checks if the player is out of food points and if so, ends the game.
-		private void CheckIfGameOver ()
+            //Check to see if game has ended.
+            CheckIfGameOver ();
+        }
+
+
+        //CheckIfGameOver checks if the player is out of food points and if so, ends the game.
+        private void CheckIfGameOver ()
 		{
 			//Check if food point total is less than or equal to zero.
 			if (hp <= 0) 
