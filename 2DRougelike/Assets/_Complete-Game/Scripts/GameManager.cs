@@ -177,6 +177,10 @@ namespace Completed
 			//Enemies are done moving, set enemiesMoving to false.
 			enemiesMoving = false;
 		}
+
+        //レベルを送る
+        public int GetLevel()
+        { return level; }
 	}
 }
 
