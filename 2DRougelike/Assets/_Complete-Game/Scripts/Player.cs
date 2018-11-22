@@ -28,7 +28,7 @@ namespace Completed
 
         public bool enemy;
         [SerializeField]
-        GameObject enemyObject;
+        private GameObject enemyObject;
 #if UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
         private Vector2 touchOrigin = -Vector2.one;	//Used to store location of screen touch origin for mobile controls.
 #endif
@@ -97,13 +97,16 @@ namespace Completed
                 transform.localScale = new Vector3(1, 1, 1);
 
             }
-            ////攻撃する
-            //if (Input.GetKeyDown(KeyCode.Space))
-            //{
-            //    //敵のHPを減らす。
-            //    animator.SetTrigger("playerChop");
-            //    Destroy(enemyObject);
-            //}
+            //攻撃する
+            if (Input.GetKeyDown(KeyCode.Space) && enemy)
+            {
+                if (enemyObject == null) return;
+                //敵のHPを減らす。
+                animator.SetTrigger("playerChop");
+                enemyObject.SetActive(false);
+                enemy = false;
+                
+            }
             //Check if we are running on iOS, Android, Windows Phone 8 or Unity iPhone
 #elif UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
 			
@@ -250,24 +253,21 @@ namespace Completed
 				//Disable the soda object the player collided with.
 				other.gameObject.SetActive (false);
 			}
-            if(other.tag=="Enemy")
-            {
-                //攻撃する
-                if (Input.GetKey(KeyCode.Space))
-                {
-                    //敵のHPを減らす。
-                    animator.SetTrigger("playerChop");
-                    enemy = true;
-                    other.gameObject.SetActive(false);
-                }
-            }
 		}
+        private void OnTriggerStay2D(Collider2D other)
+        {
+            if (other.tag == "Enemy")
+            {
+                enemyObject = other.gameObject;
+                enemy = true;
+            }
+
+        }
         private void OnTriggerExit2D(Collider2D collision)
         {
             if(collision.gameObject.tag=="Enemy")
             {
-                collision.gameObject.SetActive(true);
-                enemy = false;
+                //enemy = false;
             }
         }
 
@@ -284,20 +284,21 @@ namespace Completed
 		//It takes a parameter loss which specifies how many points to lose.
 		public void LoseFood (int loss)
 		{
-            if(enemy)
+            if (enemy)
             {
-                return;
+
+
+                //Set the trigger for the player animator to transition to the playerHit animation.
+                animator.SetTrigger("playerHit");
+
+                //Subtract lost food points from the players total.
+                hp -= loss;
+
+                //Update the food display with the new total.
+                hpText.text = "-" + loss + " HP: " + hp;
+                //Check to see if game has ended.
+                CheckIfGameOver();
             }
-			//Set the trigger for the player animator to transition to the playerHit animation.
-			animator.SetTrigger ("playerHit");
-			
-			//Subtract lost food points from the players total.
-			hp -= loss;
-			
-			//Update the food display with the new total.
-			hpText.text = "-"+ loss + " HP: " + hp;
-            //Check to see if game has ended.
-            CheckIfGameOver ();
         }
 
 
