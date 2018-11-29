@@ -14,6 +14,7 @@ namespace Completed
 		public int wallDamage = 1;					//How much damage a player does to a wall when chopping it.
 		public Text foodText;						//UI Text to display current player food total.
         public Text hpText;
+        public Text powerText;
 		public AudioClip moveSound1;				//1 of 2 Audio clips to play when player moves.
 		public AudioClip moveSound2;				//2 of 2 Audio clips to play when player moves.
 		public AudioClip eatSound1;					//1 of 2 Audio clips to play when player collects a food object.
@@ -25,6 +26,7 @@ namespace Completed
 		private Animator animator;					//Used to store a reference to the Player's animator component.
 		private int food;                           //Used to store player food points total during level.
         private int hp;
+        private int attackPower;
 
         //敵キャラを攻撃できるかどうか
         public bool enemy;
@@ -36,8 +38,7 @@ namespace Completed
         private bool enemySelf;
 
         //攻撃力
-        [SerializeField]
-        private int power;
+        private int pointsPerPower = 1;
 #if UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
         private Vector2 touchOrigin = -Vector2.one;	//Used to store location of screen touch origin for mobile controls.
 #endif
@@ -52,14 +53,16 @@ namespace Completed
 			//Get the current food point total stored in GameManager.instance between levels.
 			food = GameManager.instance.playerFoodPoints;
             hp =  GameManager.instance.playerHitPoints;
+            attackPower = GameManager.instance.playerPowerPoints;
 
             //Set the foodText to reflect the current player food total.
             foodText.text = "Food: " + food;
             hpText.text = "HP: " + hp;
+            powerText.text = "Power:" + attackPower;
 
             enemy = false;
             enemySelf = true;
-            power = 1;
+            attackPower = 1;
 			//Call the Start function of the MovingObject base class.
 			base.Start ();
 		}
@@ -71,7 +74,7 @@ namespace Completed
 			//When Player object is disabled, store the current local food total in the GameManager so it can be re-loaded in next level.
 			GameManager.instance.playerFoodPoints = food;
             GameManager.instance.playerHitPoints = hp;
-
+            GameManager.instance.playerPowerPoints = attackPower;
         }
 
 
@@ -279,13 +282,17 @@ namespace Completed
             if(other.tag=="Weapon")
             {
                 //攻撃力を増やす
+                attackPower += 1;
+                powerText.text = "+" + pointsPerPower + "Power:" + attackPower;
+                other.gameObject.SetActive(false);
+            }
+            if(other.tag== "RecoverItem")
+            {
+                food -= pointsPerFood;
+                foodText.text = "-" + pointsPerFood + "Food:" + food;
+                other.gameObject.SetActive(false);
             }
 		}
-        //private void OnTriggerStay2D(Collider2D other)
-        //{
-            
-
-        //}
         private void OnTriggerExit2D(Collider2D collision)
         {
             if(collision.gameObject.tag=="Enemy")
