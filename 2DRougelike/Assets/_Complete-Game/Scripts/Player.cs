@@ -26,9 +26,18 @@ namespace Completed
 		private int food;                           //Used to store player food points total during level.
         private int hp;
 
+        //敵キャラを攻撃できるかどうか
         public bool enemy;
         [SerializeField]
+        //敵キャラ
         private GameObject enemyObject;
+        //敵キャラのSetActiveがtrueかfalseか判定
+        [SerializeField]
+        private bool enemySelf;
+
+        //攻撃力
+        [SerializeField]
+        private int power;
 #if UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
         private Vector2 touchOrigin = -Vector2.one;	//Used to store location of screen touch origin for mobile controls.
 #endif
@@ -49,6 +58,8 @@ namespace Completed
             hpText.text = "HP: " + hp;
 
             enemy = false;
+            enemySelf = true;
+            power = 1;
 			//Call the Start function of the MovingObject base class.
 			base.Start ();
 		}
@@ -66,7 +77,11 @@ namespace Completed
 
         private void Update ()
 		{
-
+            if (enemyObject != null)
+            {
+                if (enemyObject.activeSelf) { enemySelf = true; }
+                else { enemySelf = false; }
+            }
             //If it's not the player's turn, exit the function.
             if (!GameManager.instance.playersTurn) return;
            
@@ -75,7 +90,7 @@ namespace Completed
 			int vertical = 0;		//Used to store the vertical move direction.
 
 			//Check if we are running either in the Unity editor or in a standalone build.
-#if UNITY_STANDALONE || UNITY_WEBPLAYER
+#if UNITY_STANDALONE || UNITY_WEBGL
 			
 			//Get input from the input manager, round it to an integer and store in horizontal to set x axis move direction
 			horizontal = (int) (Input.GetAxisRaw ("Horizontal"));
@@ -98,14 +113,16 @@ namespace Completed
 
             }
             //攻撃する
-            if (Input.GetKeyDown(KeyCode.Space) && enemy)
+            if (Input.GetKeyDown(KeyCode.Space) && enemySelf)
             {
                 if (enemyObject == null) return;
                 //敵のHPを減らす。
                 animator.SetTrigger("playerChop");
                 enemyObject.SetActive(false);
                 enemy = false;
-                
+                enemySelf = false;
+
+
             }
             //Check if we are running on iOS, Android, Windows Phone 8 or Unity iPhone
 #elif UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
@@ -253,21 +270,29 @@ namespace Completed
 				//Disable the soda object the player collided with.
 				other.gameObject.SetActive (false);
 			}
-		}
-        private void OnTriggerStay2D(Collider2D other)
-        {
             if (other.tag == "Enemy")
             {
+                //エネミーを取得して、攻撃できる状態に
                 enemyObject = other.gameObject;
                 enemy = true;
             }
+            if(other.tag=="Weapon")
+            {
+                //攻撃力を増やす
+            }
+		}
+        //private void OnTriggerStay2D(Collider2D other)
+        //{
+            
 
-        }
+        //}
         private void OnTriggerExit2D(Collider2D collision)
         {
             if(collision.gameObject.tag=="Enemy")
             {
-                //enemy = false;
+                //エネミーをヌルにして攻撃できない状態に
+                enemy = false;
+                enemyObject = null;
             }
         }
 
@@ -284,7 +309,7 @@ namespace Completed
 		//It takes a parameter loss which specifies how many points to lose.
 		public void LoseFood (int loss)
 		{
-            if (enemy)
+            if (enemySelf)
             {
 
 
@@ -318,6 +343,19 @@ namespace Completed
 				GameManager.instance.GameOver ();
 			}
 		}
+        public bool Enemy()
+        {
+            if (enemyObject != null)
+            { 
+            if (enemyObject.activeSelf == true)
+            { return enemySelf = true; }
+            else { return enemySelf = false; }
+            }
+            else
+            {
+                return enemySelf = true;
+            }
+        }
 	}
 }
 
