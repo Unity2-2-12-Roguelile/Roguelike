@@ -61,9 +61,6 @@ namespace Completed
         {
             if (HP >= 0)
             {
-
-
-
                 //Declare variables for X and Y axis move directions, these range from -1 to 1.
                 //These values allow us to choose between the cardinal directions: up, down, left and right.
                 int xDir = 0;
@@ -102,10 +99,23 @@ namespace Completed
             //Call the RandomizeSfx function of SoundManager passing in the two audio clips to choose randomly between.
             SoundManager.instance.RandomizeSfx(attackSound1, attackSound2);
         }
+
+        private void Ded()
+        {
+            GetComponent<BoxCollider2D>().enabled = false;
+            GetComponent<SpriteRenderer>().enabled = false;
+        }
+
         public void Damega(int Damega)
         {
             HP -= Damega;
+
+            if (HP <= 0)
+            {
+                Ded();
+            }
         }
+
         public int GetHP()
         {
             return HP;
