@@ -12,14 +12,17 @@ namespace Completed
 		
 		private BoxCollider2D boxCollider; 		//The BoxCollider2D component attached to this object.
 		private Rigidbody2D rb2D;				//The Rigidbody2D component attached to this object.
-		private float inverseMoveTime;			//Used to make movement more efficient.
-		
-		
+		private float inverseMoveTime;          //Used to make movement more efficient.
+
+        Player player;
+        GameObject playerObject;
 		//Protected, virtual functions can be overridden by inheriting classes.
 		protected virtual void Start ()
 		{
-			//Get a component reference to this object's BoxCollider2D
-			boxCollider = GetComponent <BoxCollider2D> ();
+            playerObject = GameObject.FindGameObjectWithTag("Player");
+            player = playerObject.GetComponent<Player>();
+            //Get a component reference to this object's BoxCollider2D
+            boxCollider = GetComponent <BoxCollider2D> ();
 			
 			//Get a component reference to this object's Rigidbody2D
 			rb2D = GetComponent <Rigidbody2D> ();
