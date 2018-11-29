@@ -2,6 +2,7 @@
 using System.Collections;
 using UnityEngine.UI;	//Allows us to use UI.
 using UnityEngine.SceneManagement;
+using UnityEngine;
 
 namespace Completed
 {
@@ -11,6 +12,7 @@ namespace Completed
 		public float restartLevelDelay = 1f;		//Delay time in seconds to restart level.
 		public int pointsPerFood = 10;				//Number of points to add to player food points when picking up a food object.
 		public int pointsPerSoda = 20;				//Number of points to add to player food points when picking up a soda object.
+        public int pointsPerHP = 5;
 		public int wallDamage = 1;					//How much damage a player does to a wall when chopping it.
 		public Text foodText;						//UI Text to display current player food total.
         public Text hpText;
@@ -26,6 +28,7 @@ namespace Completed
 		private Animator animator;					//Used to store a reference to the Player's animator component.
 		private int food;                           //Used to store player food points total during level.
         private int hp;
+        [SerializeField]
         private int attackPower;
 
         //敵キャラを攻撃できるかどうか
@@ -33,19 +36,21 @@ namespace Completed
         [SerializeField]
         //敵キャラ
         private GameObject enemyObject;
+        private Enemy enem;
         //敵キャラのSetActiveがtrueかfalseか判定
         [SerializeField]
         private bool enemySelf;
 
         //攻撃力
         private int pointsPerPower = 1;
+        
 #if UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
         private Vector2 touchOrigin = -Vector2.one;	//Used to store location of screen touch origin for mobile controls.
 #endif
-		
-		
-		//Start overrides the Start function of MovingObject
-		protected override void Start ()
+
+
+        //Start overrides the Start function of MovingObject
+        protected override void Start ()
 		{
 			//Get a component reference to the Player's animator component
 			animator = GetComponent<Animator>();
@@ -59,10 +64,8 @@ namespace Completed
             foodText.text = "Food: " + food;
             hpText.text = "HP: " + hp;
             powerText.text = "Power:" + attackPower;
-
             enemy = false;
             enemySelf = true;
-            attackPower = 1;
 			//Call the Start function of the MovingObject base class.
 			base.Start ();
 		}
@@ -81,8 +84,10 @@ namespace Completed
         private void Update ()
 		{
             if (enemyObject != null)
-            {
-                if (enemyObject.activeSelf) { enemySelf = true; }
+            {//HPがあったら攻撃できる
+                if (enem.GetHP() > 0) { enemySelf = true;
+                    enem=enemyObject.GetComponent<Enemy>();
+                }
                 else { enemySelf = false; }
             }
             //If it's not the player's turn, exit the function.
@@ -121,9 +126,14 @@ namespace Completed
                 if (enemyObject == null) return;
                 //敵のHPを減らす。
                 animator.SetTrigger("playerChop");
-                enemyObject.SetActive(false);
-                enemy = false;
-                enemySelf = false;
+                enem.Damega(attackPower);
+                //HPがなくなったら非表示にする
+                if (enem.GetHP() <= 0)
+                {
+                    //enemyObject.SetActive(false);
+                    enemy = false;
+                    enemySelf = false;
+                }
 
 
             }
@@ -189,7 +199,8 @@ namespace Completed
             else
             { hp--;
                 hpText.text = "HP: " + hp;}
-			
+                hpText.text = "HP: " + hp;
+            powerText.text = "Power:" + attackPower;
 			//Update food text display to reflect current score.
 			
 			
@@ -277,22 +288,33 @@ namespace Completed
             {
                 //エネミーを取得して、攻撃できる状態に
                 enemyObject = other.gameObject;
+                enem = enemyObject.GetComponent<Enemy>();
                 enemy = true;
             }
             if(other.tag=="Weapon")
             {
-                //攻撃力を増やす
-                attackPower += 1;
-                powerText.text = "+" + pointsPerPower + "Power:" + attackPower;
+                attackPower = other.transform.GetComponent<Weapon>().GetPower();
+                powerText.text = "Power:"+attackPower;
+                SoundManager.instance.RandomizeSfx(drinkSound1, drinkSound2);
                 other.gameObject.SetActive(false);
             }
-            if(other.tag== "RecoverItem")
+            if (other.tag== "RottenFood")
             {
+                //腐った食べ物
                 food -= pointsPerFood;
                 foodText.text = "-" + pointsPerFood + "Food:" + food;
+                SoundManager.instance.RandomizeSfx(eatSound1, eatSound2);
                 other.gameObject.SetActive(false);
             }
-		}
+            if(other.tag== "RecoveryItem")
+            {
+                //回復アイテム
+                hp += pointsPerHP;
+                hpText.text = "+" + pointsPerHP + "HP:" + hp;
+                SoundManager.instance.RandomizeSfx(drinkSound1, drinkSound2);
+                other.gameObject.SetActive(false);
+            }
+        }
         private void OnTriggerExit2D(Collider2D collision)
         {
             if(collision.gameObject.tag=="Enemy")
@@ -331,6 +353,7 @@ namespace Completed
                 //Check to see if game has ended.
                 CheckIfGameOver();
             }
+            hpText.text = "HP:" + hp;
         }
 
 
